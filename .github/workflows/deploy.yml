@@ -1,0 +1,43 @@
+name: Deploy landing a VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency: deploy-production
+
+env:
+  SOURCE_DIR: ./
+  REMOTE_DIR: /var/www/wtvr-tech-lp/
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -t ed25519 -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Subir landing al servidor
+        run: |
+          rsync -avz --delete --no-owner --no-group \
+            --exclude '.git' \
+            --exclude '.gitignore' \
+            --exclude '.github' \
+            --exclude '.DS_Store' \
+            --exclude 'README.md' \
+            --exclude 'ai-transformation/' \
+            -e "ssh -i ~/.ssh/id_ed25519" \
+            ${{ env.SOURCE_DIR }} \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ env.REMOTE_DIR }}
+
+      - name: Ajustar permisos
+        run: |
+          ssh -i ~/.ssh/id_ed25519 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "chown -R www-data:www-data ${{ env.REMOTE_DIR }}"
