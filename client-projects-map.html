@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Client Projects &mdash; Global Footprint</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0A0E1A; --side:#0B1020; --hair:rgba(255,255,255,.08);
+    --coral:#FF3054; --coral-soft:rgba(255,48,84,.5); --hi:#F2F4F8; --lo:#8A93A6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--ink);font-family:Inter,system-ui,sans-serif;color:var(--hi)}
+  .app{display:flex;height:100%;width:100%}
+  .sidebar{width:300px;flex:none;display:flex;flex-direction:column;background:var(--side);border-right:1px solid var(--hair)}
+  .map-wrap{flex:1;position:relative;min-width:0}
+  #map{position:absolute;inset:0;background:var(--ink)}
+  .leaflet-container{background:var(--ink);font-family:Inter,sans-serif}
+  .leaflet-tile-pane{filter:brightness(.9) contrast(1.05)}
+  body.fallback .leaflet-tile-pane{filter:invert(1) grayscale(.92) brightness(.95) contrast(.9)}
+
+  .pin{position:relative;width:14px;height:14px}
+  .pin .dot{position:absolute;inset:0;border-radius:50%;
+    background:radial-gradient(circle at 35% 35%,#FF8398,var(--coral));
+    box-shadow:0 0 0 2px rgba(10,14,26,.9), 0 0 10px 2px var(--coral-soft);
+    transition:transform .18s ease, box-shadow .18s ease}
+  .pin:hover .dot{transform:scale(1.45);box-shadow:0 0 0 2px rgba(10,14,26,.9),0 0 16px 5px var(--coral-soft)}
+  .pin.is-active .dot{transform:scale(1.55);box-shadow:0 0 0 2px rgba(10,14,26,.95),0 0 22px 7px var(--coral-soft)}
+
+  .leaflet-tooltip.name-tip{background:#12182a;color:var(--hi);border:1px solid var(--hair);
+    border-radius:7px;padding:5px 9px;font-weight:600;font-size:12.5px;letter-spacing:.2px;box-shadow:0 6px 22px rgba(0,0,0,.45)}
+  .leaflet-tooltip.name-tip:before{display:none}
+  .leaflet-popup-content-wrapper{background:#0E1322;border:1px solid var(--hair);border-radius:12px;box-shadow:0 18px 50px rgba(0,0,0,.55)}
+  .leaflet-popup-tip{background:#0E1322;border:1px solid var(--hair)}
+  .leaflet-popup-content{margin:13px 15px;font-family:Inter,sans-serif}
+  .pp-name{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;color:var(--hi);margin-bottom:3px}
+  .pp-addr{font-size:12.5px;color:var(--lo);line-height:1.45}
+  .pp-flag{display:inline-block;margin-top:8px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--coral);border-top:1px solid var(--hair);padding-top:7px}
+  .leaflet-popup-close-button{color:var(--lo)!important}
+
+  .head{padding:20px 20px 16px;border-bottom:1px solid var(--hair)}
+  .eyebrow{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--coral);font-weight:600}
+  .title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:23px;letter-spacing:-.01em;margin:6px 0 12px}
+  .stats{display:flex;gap:18px}
+  .stat .n{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:19px}
+  .stat .l{font-size:11px;color:var(--lo);letter-spacing:.04em}
+  .search{position:relative;padding:14px 20px}
+  .search input{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--hair);border-radius:10px;
+    padding:10px 12px 10px 34px;color:var(--hi);font-size:13px;font-family:Inter,sans-serif;outline:none;transition:border .15s}
+  .search input::placeholder{color:var(--lo)}
+  .search input:focus{border-color:var(--coral-soft)}
+  .search svg{position:absolute;left:31px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--lo);fill:none}
+
+  .acc{flex:1;overflow:auto;border-top:1px solid var(--hair)}
+  details{border-bottom:1px solid rgba(255,255,255,.05)}
+  details.state{border-bottom:1px solid rgba(255,255,255,.035)}
+  summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:9px;padding:12px 18px;transition:background .12s}
+  summary::-webkit-details-marker{display:none}
+  summary:hover{background:rgba(255,255,255,.03)}
+  .chev{flex:none;width:7px;height:7px;border-right:1.6px solid var(--lo);border-bottom:1.6px solid var(--lo);
+    transform:rotate(-45deg);transition:transform .15s}
+  details[open]>summary .chev{transform:rotate(45deg)}
+  .country>summary .nm{font-size:13.5px;font-weight:600;color:var(--hi);flex:1}
+  .state>summary{padding-left:30px}
+  .state>summary .nm{font-size:12.5px;font-weight:500;color:var(--hi);flex:1}
+  .badge{flex:none;min-width:23px;height:21px;padding:0 7px;border-radius:11px;display:flex;align-items:center;justify-content:center;
+    background:rgba(255,48,84,.13);color:#FF7E96;font-size:11px;font-weight:600;font-family:'Space Grotesk',sans-serif}
+  .cl{padding:9px 20px 9px 47px;font-size:12.5px;color:var(--lo);cursor:pointer;transition:background .12s,color .12s;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cl:hover{background:rgba(255,48,84,.10);color:var(--hi)}
+  .empty{padding:16px 20px;color:var(--lo);font-size:12.5px}
+  .acc::-webkit-scrollbar{width:9px}
+  .acc::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:8px;border:2px solid transparent;background-clip:padding-box}
+  .credit{position:absolute;bottom:8px;right:10px;z-index:500;font-size:10.5px;color:var(--lo);opacity:.7}
+
+  @media (max-width:820px){
+    .app{flex-direction:column}
+    .sidebar{width:auto;flex:none;max-height:52vh;border-right:none;border-bottom:1px solid var(--hair)}
+    .map-wrap{flex:1;min-height:320px}
+    /* single column — one country open at a time, its cities listed beneath it */
+    .acc{display:block}
+    details.country{border-bottom:1px solid rgba(255,255,255,.07)}
+    .country>summary{padding:12px 16px}
+    .country>summary .nm{font-size:13px}
+  }
+  @media (prefers-reduced-motion:reduce){ .pin .dot{transition:none} }
+
+  /* Custom cursor inside the map iframe — matches the site (red dot + ring + echo) */
+  @media (hover:hover) and (pointer:fine){
+    *,*::before,*::after{cursor:none !important}
+    .cur-dot,.cur-ring{position:fixed;top:0;left:0;border-radius:50%;pointer-events:none;z-index:99999;will-change:transform}
+    .cur-dot{width:7px;height:7px;background:var(--coral);margin:-3.5px 0 0 -3.5px;box-shadow:0 0 8px rgba(255,48,84,.8);transition:opacity .25s}
+    .cur-ring{width:34px;height:34px;border:1.5px solid rgba(255,48,84,.55);margin:-17px 0 0 -17px;transition:opacity .25s}
+    .cur-echo{position:fixed;top:0;left:0;border-radius:50%;border:1.5px solid var(--coral);pointer-events:none;z-index:99998}
+    .cur-dot.is-hidden,.cur-ring.is-hidden{opacity:0}
+  }
+  @media (hover:none),(pointer:coarse){ .cur-dot,.cur-ring,.cur-echo{display:none} }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="head">
+      <div class="eyebrow">Whatever Tech</div>
+      <div class="title">Client Projects</div>
+      <div class="stats">
+        <div class="stat"><div class="n">95</div><div class="l">clients</div></div>
+        <div class="stat"><div class="n">75</div><div class="l">cities</div></div>
+        <div class="stat"><div class="n">15</div><div class="l">countries</div></div>
+      </div>
+    </div>
+    <div class="search">
+      <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="q" type="text" placeholder="Search country, state or client&hellip;" autocomplete="off"/>
+    </div>
+    <div class="acc" id="acc"></div>
+  </aside>
+  <div class="map-wrap">
+    <div id="map"></div>
+    <div class="credit">&copy; OpenStreetMap contributors &middot; CARTO</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const PINS = [{"client": "Be Fit Now", "address": "Houston, Texas, USA", "lat": 29.7604, "lng": -95.3698, "country": "United States", "city": "Houston", "state": "Texas"}, {"client": "Atherton Hockey", "address": "Hudson, Wisconsin, USA", "lat": 44.9747, "lng": -92.7568, "country": "United States", "city": "Hudson", "state": "Wisconsin"}, {"client": "Sutton Summit", "address": "33 Pearl St, Mississauga, ON, Canada", "lat": 43.589, "lng": -79.6441, "country": "Canada", "city": "Mississauga", "state": "Ontario"}, {"client": "Tourism Guides Limited", "address": "689 Frankton Road, Queenstown 9300, New Zealand", "lat": -45.021, "lng": 168.6626, "country": "New Zealand", "city": "Queenstown", "state": "Queenstown"}, {"client": "Goldstein Consulting Group", "address": "2980 NE 207th Street suite 300, Aventura, FL 33180, USA", "lat": 25.9565, "lng": -80.139, "country": "United States", "city": "Aventura", "state": "Florida"}, {"client": "Connors Consulting", "address": "309 Belleview Boulevard, Belleair, FL, USA", "lat": 27.9367, "lng": -82.8051, "country": "United States", "city": "Belleair", "state": "Florida"}, {"client": "Wilson Veterinary Co.", "address": "1250 Franklin Place Court, Franklin, IN 46131, USA", "lat": 39.4806, "lng": -86.055, "country": "United States", "city": "Franklin", "state": "Indiana"}, {"client": "Dreymar Industrial", "address": "7 Silverstone Street, Gosforth Park, Germiston, South Africa", "lat": -26.2309, "lng": 28.1764, "country": "South Africa", "city": "Germiston", "state": "Germiston"}, {"client": "DR Legal Pros", "address": "Dominican Republic", "lat": 18.7357, "lng": -70.1627, "country": "Dominican Republic", "city": "Dominican Republic", "state": "Dominican Republic"}, {"client": "The HOW Group", "address": "720 Fayette Street, Conshohocken, PA 19428, USA", "lat": 40.079, "lng": -75.3019, "country": "United States", "city": "Conshohocken", "state": "Pennsylvania"}, {"client": "Dunlop Sports North America", "address": "601 Skylab Rd, Huntington Beach, CA 92647, USA", "lat": 33.7167, "lng": -118.005, "country": "United States", "city": "Huntington Beach", "state": "California"}, {"client": "Vorreiter Gruppe", "address": "Cologne, Germany", "lat": 50.9375, "lng": 6.9603, "country": "Germany", "city": "Cologne", "state": "Cologne"}, {"client": "Panrix Limited", "address": "London, Reino Unido", "lat": 51.5074, "lng": -0.1278, "country": "United Kingdom", "city": "London", "state": "London"}, {"client": "Sandbox VR", "address": "9101 International Dr suite 1308, Orlando, FL 32819, USA", "lat": 28.429, "lng": -81.47, "country": "United States", "city": "Orlando", "state": "Florida"}, {"client": "ARIA Logistics", "address": "95 Cedar Ln suite 8, Englewood, NJ 07631, USA", "lat": 40.8929, "lng": -73.9726, "country": "United States", "city": "Englewood", "state": "New Jersey"}, {"client": "Bloom Executive Coaching", "address": "Louisville, Kentucky, USA", "lat": 38.2527, "lng": -85.7585, "country": "United States", "city": "Louisville", "state": "Kentucky"}, {"client": "Desert Bloom Plastic Surgery", "address": "South Mall Drive, St. George, Utah, USA", "lat": 37.0965, "lng": -113.5684, "country": "United States", "city": "St. George", "state": "Utah"}, {"client": "Creator Origin", "address": "West Hollywood, California, USA", "lat": 34.09, "lng": -118.3617, "country": "United States", "city": "West Hollywood", "state": "California"}, {"client": "New Leaf Health", "address": "19179 Blanco Rd ste 105 318, San Antonio, TX 78258, USA", "lat": 29.595, "lng": -98.53, "country": "United States", "city": "San Antonio", "state": "Texas"}, {"client": "Blue Ridge Investments", "address": "3232 McKinney Avenue, Dallas, TX, USA", "lat": 32.7975, "lng": -96.803, "country": "United States", "city": "Dallas", "state": "Texas"}, {"client": "Jams", "address": "San Francisco, California, USA", "lat": 37.7749, "lng": -122.4194, "country": "United States", "city": "San Francisco", "state": "California"}, {"client": "Charney Companies", "address": "5-26 46th Ave suite 2a, Long Island City, NY 11101, USA", "lat": 40.7447, "lng": -73.9485, "country": "United States", "city": "New York", "state": "New York"}, {"client": "BNB Breeze", "address": "Sarasota, FL, USA", "lat": 27.3364, "lng": -82.5307, "country": "United States", "city": "Sarasota", "state": "Florida"}, {"client": "FoxOps Consulting", "address": "Austin, Texas, USA", "lat": 30.2672, "lng": -97.7431, "country": "United States", "city": "Austin", "state": "Texas"}, {"client": "GammaSweep", "address": "Wilmington, Delaware, USA", "lat": 39.7459, "lng": -75.5466, "country": "United States", "city": "Wilmington", "state": "Delaware"}, {"client": "Next Gen Men", "address": "111 12 Avenue Southeast, Calgary, AB T2G 0Z9, Canada", "lat": 51.0447, "lng": -114.0719, "country": "Canada", "city": "Calgary", "state": "Alberta"}, {"client": "DACO Construction", "address": "311 W Norfolk Ave suite 200, Norfolk, NE 68701, USA", "lat": 42.0286, "lng": -97.417, "country": "United States", "city": "Norfolk", "state": "Nebraska"}, {"client": "My House Design", "address": "3443 East Hastings Street, Vancouver, BC V5K 2A5", "lat": 49.281, "lng": -123.039, "country": "Canada", "city": "Vancouver", "state": "British Columbia"}, {"client": "Infinity BH", "address": "9520 Harding Ave #1, Surfside, FL 33154, USA", "lat": 25.8787, "lng": -80.1234, "country": "United States", "city": "Surfside", "state": "Florida"}, {"client": "Advanced Safety & Energy", "address": "5055 Pilgrim Rd, Flint, MI 48507, USA", "lat": 43.0125, "lng": -83.6875, "country": "United States", "city": "Flint", "state": "Michigan"}, {"client": "Techknowledge Group", "address": "Los Gatos, CA 95030, USA", "lat": 37.2358, "lng": -121.9624, "country": "United States", "city": "Los Gatos", "state": "California"}, {"client": "Potomac Growth", "address": "The Green, Dover, DE, USA", "lat": 39.1582, "lng": -75.5244, "country": "United States", "city": "Dover", "state": "Delaware"}, {"client": "Fundación DeAcero", "address": "Avenida Lazaro Cardenas 2333, San Pedro Garza Garcia, Nuevo Leon, Mexico", "lat": 25.656, "lng": -100.402, "country": "Mexico", "city": "Monterrey", "state": "Nuevo León"}, {"client": "Robinson Immigration Law", "address": "Nashville, TN", "lat": 36.1627, "lng": -86.7816, "country": "United States", "city": "Nashville", "state": "Tennessee"}, {"client": "Safe Harbour Informatics", "address": "5763 203A Street, Langley, British Columbia, Canada", "lat": 49.1044, "lng": -122.6604, "country": "Canada", "city": "Langley", "state": "British Columbia"}, {"client": "Chemlock Nutrition", "address": "9100 West Chester Towne Centre Road, Cincinnati, OH 45069", "lat": 39.329, "lng": -84.403, "country": "United States", "city": "Cincinnati", "state": "Ohio"}, {"client": "Atomicent", "address": "Atlanta, Georgia, USA", "lat": 33.749, "lng": -84.388, "country": "United States", "city": "Atlanta", "state": "Georgia"}, {"client": "Peak Group Companies", "address": "California, USA", "lat": 36.7783, "lng": -119.4179, "country": "United States", "city": "California", "state": "California"}, {"client": "Alpha Investment Group", "address": "1120 N Town Center Dr #220, Las Vegas, NV 89144, USA", "lat": 36.1716, "lng": -115.329, "country": "United States", "city": "Las Vegas", "state": "Nevada"}, {"client": "GlobalOps", "address": "New York, NY, USA", "lat": 40.69953, "lng": -74.01816, "country": "United States", "city": "New York", "state": "New York"}, {"client": "Lucid Brands", "address": "Cleveland, Ohio, USA", "lat": 41.4993, "lng": -81.6944, "country": "United States", "city": "Cleveland", "state": "Ohio"}, {"client": "Orbital Studio", "address": "Madrid, Spain", "lat": 40.4168, "lng": -3.7038, "country": "Spain", "city": "Madrid", "state": "Madrid"}, {"client": "Trimm Roofing", "address": "Lakeland, Florida, USA", "lat": 28.0395, "lng": -81.9498, "country": "United States", "city": "Lakeland", "state": "Florida"}, {"client": "Ohm Solar Solutions", "address": "California, USA", "lat": 36.76503, "lng": -119.43006, "country": "United States", "city": "California", "state": "California"}, {"client": "Terrasol", "address": "Las Fresas 767, Miraflores 15048, Peru", "lat": -12.12, "lng": -77.03, "country": "Peru", "city": "Miraflores, Lima", "state": "Miraflores, Lima"}, {"client": "Arzuman Brothers", "address": "California, USA", "lat": 36.77987, "lng": -119.39997, "country": "United States", "city": "California", "state": "California"}, {"client": "Abstract Capital Group", "address": "New York, NY, USA", "lat": 40.71437, "lng": -73.98807, "country": "United States", "city": "New York", "state": "New York"}, {"client": "Whatever Tech LLC", "address": "848 Brickell Ave, Miami, FL, USA", "lat": 25.7663, "lng": -80.1925, "country": "United States", "city": "Miami", "state": "Florida"}, {"client": "The Social Team", "address": "New York, NY, USA", "lat": 40.72375, "lng": -74.02029, "country": "United States", "city": "New York", "state": "New York"}, {"client": "Too Good Cannabis", "address": "Detroit, Michigan, USA", "lat": 42.3314, "lng": -83.0458, "country": "United States", "city": "Detroit", "state": "Michigan"}, {"client": "Tdeos", "address": "Cincinnati, Ohio, USA", "lat": 39.1031, "lng": -84.512, "country": "United States", "city": "Cincinnati", "state": "Ohio"}, {"client": "Jackie Nash Consulting", "address": "Western Cape, South Africa", "lat": -33.9249, "lng": 18.4241, "country": "South Africa", "city": "Cape Town", "state": "Cape Town"}, {"client": "MiniPak S.A.S", "address": "Montevideo, Uruguay", "lat": -34.9011, "lng": -56.1645, "country": "Uruguay", "city": "Montevideo", "state": "Montevideo"}, {"client": "Louisa's Electronics", "address": "2201 Main Ave, Durango, CO 81301, USA", "lat": 37.2753, "lng": -107.8801, "country": "United States", "city": "Durango", "state": "Colorado"}, {"client": "Verde Equity Partners", "address": "Los Angeles, California, USA", "lat": 34.0522, "lng": -118.2437, "country": "United States", "city": "Los Angeles", "state": "California"}, {"client": "KnipBio", "address": "110 Canal St, Lowell, MA, USA", "lat": 42.6334, "lng": -71.3162, "country": "United States", "city": "Lowell", "state": "Massachusetts"}, {"client": "Creative Benefits Administrators", "address": "85 NE Interstate 410 Loop, San Antonio, TX 78216, USA", "lat": 29.52, "lng": -98.44, "country": "United States", "city": "San Antonio", "state": "Texas"}, {"client": "Wild 6", "address": "507 Fountainbleu Blvd, Anderson, SC 29625, USA", "lat": 34.5034, "lng": -82.6501, "country": "United States", "city": "Anderson", "state": "South Carolina"}, {"client": "Nature's Touch", "address": "195 Toray Dr, Front Royal, VA 22630, USA", "lat": 38.9182, "lng": -78.1944, "country": "United States", "city": "Front Royal", "state": "Virginia"}, {"client": "Poke Bear Agency", "address": "1333 Broadway, New York, NY 10018, USA", "lat": 40.7522, "lng": -73.9877, "country": "United States", "city": "New York", "state": "New York"}, {"client": "Dentserv", "address": "15 Canal Road, Pelham, NY 10803, USA", "lat": 40.9098, "lng": -73.8084, "country": "United States", "city": "Pelham", "state": "New York"}, {"client": "United Flow Technologies", "address": "6363 State Highway 161, Irving, Texas 75038, USA", "lat": 32.887, "lng": -96.959, "country": "United States", "city": "Irving", "state": "Texas"}, {"client": "Damian Club", "address": "Avenida Republica de Panama, Barranco, Peru", "lat": -12.148, "lng": -77.02, "country": "Peru", "city": "Barranco, Lima", "state": "Barranco, Lima"}, {"client": "PrimeX Medical", "address": "56 Daglish St, Wembley WA 6014, Australia", "lat": -31.93, "lng": 115.81, "country": "Australia", "city": "Perth", "state": "Western Australia"}, {"client": "Ability Housing", "address": "973 Wellington St, West Perth WA 6005, Australia", "lat": -31.948, "lng": 115.839, "country": "Australia", "city": "Perth", "state": "Western Australia"}, {"client": "Brooksfield Properties", "address": "250 Vesey Street 15th floor, New York, NY 10281, USA", "lat": 40.7138, "lng": -74.015, "country": "United States", "city": "New York", "state": "New York"}, {"client": "Elite Home Stagers", "address": "4021 NE 5th Terrace, Oakland Park, FL 33334, USA", "lat": 26.1773, "lng": -80.132, "country": "United States", "city": "Oakland Park", "state": "Florida"}, {"client": "SERES", "address": "Lima, Peru", "lat": -12.0464, "lng": -77.0428, "country": "Peru", "city": "Lima", "state": "Lima"}, {"client": "AIT Capital", "address": "Av. del Pinar 134, Chacarilla del Estanque, Surco, Peru", "lat": -12.118, "lng": -76.983, "country": "Peru", "city": "Surco, Lima", "state": "Surco, Lima"}, {"client": "Matysek Co.", "address": "Berlin, Germany", "lat": 52.52, "lng": 13.405, "country": "Germany", "city": "Berlin", "state": "Berlin"}, {"client": "Belize Telecommunications", "address": "Belize City, Belize", "lat": 17.5046, "lng": -88.1962, "country": "Belize", "city": "Belize City", "state": "Belize City"}, {"client": "VIVIDA", "address": "London, United Kingdom", "lat": 51.5074, "lng": -0.129, "country": "United Kingdom", "city": "London", "state": "London"}, {"client": "KOCH063", "address": "Wichita, Kansas, USA", "lat": 37.6872, "lng": -97.3301, "country": "United States", "city": "Wichita", "state": "Kansas"}, {"client": "Day by Day Project", "address": "Columbus, Ohio, USA", "lat": 39.9612, "lng": -82.9988, "country": "United States", "city": "Columbus", "state": "Ohio"}, {"client": "In Practise", "address": "Conduit St, London W1S 2YX, United Kingdom", "lat": 51.5128, "lng": -0.1419, "country": "United Kingdom", "city": "London", "state": "London"}, {"client": "Rumbl Rent a Car", "address": "Miami, Florida, USA", "lat": 25.7617, "lng": -80.1918, "country": "United States", "city": "Miami", "state": "Florida"}, {"client": "TENGO", "address": "Lima, Peru", "lat": -12.05967, "lng": -77.05496, "country": "Peru", "city": "Lima", "state": "Lima"}, {"client": "IQ Air", "address": "La Mirada, California, USA", "lat": 33.9172, "lng": -118.012, "country": "United States", "city": "La Mirada", "state": "California"}, {"client": "Two Front", "address": "Texas, USA", "lat": 31.9686, "lng": -99.9018, "country": "United States", "city": "Texas", "state": "Texas"}, {"client": "FC Capital", "address": "Sydney, New South Wales, Australia", "lat": -33.8688, "lng": 151.2093, "country": "Australia", "city": "Sydney", "state": "New South Wales"}, {"client": "Live Axe", "address": "New York, NY, USA", "lat": 40.69508, "lng": -74.00286, "country": "United States", "city": "New York", "state": "New York"}, {"client": "Latin Gin", "address": "Salerno, Italy", "lat": 40.6824, "lng": 14.7681, "country": "Italy", "city": "Salerno", "state": "Salerno"}, {"client": "House of Bricks", "address": "Excelsior, MN, USA", "lat": 44.903, "lng": -93.566, "country": "United States", "city": "Excelsior", "state": "Minnesota"}, {"client": "Dulux Group", "address": "DuluxGroup, Dandenong Road, Clayton Victoria, Australia", "lat": -37.924, "lng": 145.121, "country": "Australia", "city": "Clayton, Melbourne", "state": "Victoria"}, {"client": "NobleProg", "address": "Vancouver, British Columbia, Canada", "lat": 49.2827, "lng": -123.1207, "country": "Canada", "city": "Vancouver", "state": "British Columbia"}, {"client": "Audox Ingenieria", "address": "Santiago, Chile", "lat": -33.4489, "lng": -70.6693, "country": "Chile", "city": "Santiago", "state": "Santiago"}, {"client": "WMK", "address": "Munich, Germany", "lat": 48.1351, "lng": 11.582, "country": "Germany", "city": "Munich", "state": "Munich"}, {"client": "Hotspot", "address": "Av. Republica de Panama 240, Barranco 15049, Peru", "lat": -12.145, "lng": -77.021, "country": "Peru", "city": "Barranco, Lima", "state": "Barranco, Lima"}, {"client": "Uayki", "address": "C. Los Tulipanes, Santiago de Surco 15023, Peru", "lat": -12.11, "lng": -76.99, "country": "Peru", "city": "Surco, Lima", "state": "Surco, Lima"}, {"client": "Lean Leadership Center", "address": "Chicago, Illinois, USA", "lat": 41.8781, "lng": -87.6298, "country": "United States", "city": "Chicago", "state": "Illinois"}, {"client": "Cases by Source", "address": "New Jersey, USA", "lat": 40.0583, "lng": -74.4057, "country": "United States", "city": "New Jersey", "state": "New Jersey"}, {"client": "HealthReg Solutions", "address": "Menai, Carter Road, New South Wales, Australia", "lat": -34.015, "lng": 151.013, "country": "Australia", "city": "Menai, Sydney", "state": "New South Wales"}, {"client": "Infiniti Payments", "address": "Orem, Utah, USA", "lat": 40.2969, "lng": -111.6946, "country": "United States", "city": "Orem", "state": "Utah"}, {"client": "2MO Group", "address": "New York, NY, USA", "lat": 40.72799, "lng": -73.99634, "country": "United States", "city": "New York", "state": "New York"}, {"client": "Ashland Pacific", "address": "Los Angeles, California, USA", "lat": 34.03893, "lng": -118.25586, "country": "United States", "city": "Los Angeles", "state": "California"}];
+const TREE = [{"c": "United States", "n": 62, "s": [{"n": "California", "k": 10, "cl": [{"n": "Arzuman Brothers", "i": 45}, {"n": "Ashland Pacific", "i": 94}, {"n": "Creator Origin", "i": 17}, {"n": "Dunlop Sports North America", "i": 10}, {"n": "IQ Air", "i": 77}, {"n": "Jams", "i": 20}, {"n": "Ohm Solar Solutions", "i": 43}, {"n": "Peak Group Companies", "i": 37}, {"n": "Techknowledge Group", "i": 30}, {"n": "Verde Equity Partners", "i": 54}]}, {"n": "Florida", "k": 9, "cl": [{"n": "BNB Breeze", "i": 22}, {"n": "Connors Consulting", "i": 5}, {"n": "Elite Home Stagers", "i": 66}, {"n": "Goldstein Consulting Group", "i": 4}, {"n": "Infinity BH", "i": 28}, {"n": "Rumbl Rent a Car", "i": 75}, {"n": "Sandbox VR", "i": 13}, {"n": "Trimm Roofing", "i": 42}, {"n": "Whatever Tech LLC", "i": 47}]}, {"n": "New York", "k": 9, "cl": [{"n": "2MO Group", "i": 93}, {"n": "Abstract Capital Group", "i": 46}, {"n": "Brooksfield Properties", "i": 65}, {"n": "Charney Companies", "i": 21}, {"n": "Dentserv", "i": 60}, {"n": "GlobalOps", "i": 39}, {"n": "Live Axe", "i": 80}, {"n": "Poke Bear Agency", "i": 59}, {"n": "The Social Team", "i": 48}]}, {"n": "Texas", "k": 7, "cl": [{"n": "Be Fit Now", "i": 0}, {"n": "Blue Ridge Investments", "i": 19}, {"n": "Creative Benefits Administrators", "i": 56}, {"n": "FoxOps Consulting", "i": 23}, {"n": "New Leaf Health", "i": 18}, {"n": "Two Front", "i": 78}, {"n": "United Flow Technologies", "i": 61}]}, {"n": "Ohio", "k": 4, "cl": [{"n": "Chemlock Nutrition", "i": 35}, {"n": "Day by Day Project", "i": 73}, {"n": "Lucid Brands", "i": 40}, {"n": "Tdeos", "i": 50}]}, {"n": "Delaware", "k": 2, "cl": [{"n": "GammaSweep", "i": 24}, {"n": "Potomac Growth", "i": 31}]}, {"n": "Michigan", "k": 2, "cl": [{"n": "Advanced Safety & Energy", "i": 29}, {"n": "Too Good Cannabis", "i": 49}]}, {"n": "New Jersey", "k": 2, "cl": [{"n": "ARIA Logistics", "i": 14}, {"n": "Cases by Source", "i": 90}]}, {"n": "Utah", "k": 2, "cl": [{"n": "Desert Bloom Plastic Surgery", "i": 16}, {"n": "Infiniti Payments", "i": 92}]}, {"n": "Colorado", "k": 1, "cl": [{"n": "Louisa's Electronics", "i": 53}]}, {"n": "Georgia", "k": 1, "cl": [{"n": "Atomicent", "i": 36}]}, {"n": "Illinois", "k": 1, "cl": [{"n": "Lean Leadership Center", "i": 89}]}, {"n": "Indiana", "k": 1, "cl": [{"n": "Wilson Veterinary Co.", "i": 6}]}, {"n": "Kansas", "k": 1, "cl": [{"n": "KOCH063", "i": 72}]}, {"n": "Kentucky", "k": 1, "cl": [{"n": "Bloom Executive Coaching", "i": 15}]}, {"n": "Massachusetts", "k": 1, "cl": [{"n": "KnipBio", "i": 55}]}, {"n": "Minnesota", "k": 1, "cl": [{"n": "House of Bricks", "i": 82}]}, {"n": "Nebraska", "k": 1, "cl": [{"n": "DACO Construction", "i": 26}]}, {"n": "Nevada", "k": 1, "cl": [{"n": "Alpha Investment Group", "i": 38}]}, {"n": "Pennsylvania", "k": 1, "cl": [{"n": "The HOW Group", "i": 9}]}, {"n": "South Carolina", "k": 1, "cl": [{"n": "Wild 6", "i": 57}]}, {"n": "Tennessee", "k": 1, "cl": [{"n": "Robinson Immigration Law", "i": 33}]}, {"n": "Virginia", "k": 1, "cl": [{"n": "Nature's Touch", "i": 58}]}, {"n": "Wisconsin", "k": 1, "cl": [{"n": "Atherton Hockey", "i": 1}]}]}, {"c": "Peru", "n": 7, "s": [{"n": "Barranco, Lima", "k": 2, "cl": [{"n": "Damian Club", "i": 62}, {"n": "Hotspot", "i": 87}]}, {"n": "Lima", "k": 2, "cl": [{"n": "SERES", "i": 67}, {"n": "TENGO", "i": 76}]}, {"n": "Surco, Lima", "k": 2, "cl": [{"n": "AIT Capital", "i": 68}, {"n": "Uayki", "i": 88}]}, {"n": "Miraflores, Lima", "k": 1, "cl": [{"n": "Terrasol", "i": 44}]}]}, {"c": "Australia", "n": 5, "s": [{"n": "New South Wales", "k": 2, "cl": [{"n": "FC Capital", "i": 79}, {"n": "HealthReg Solutions", "i": 91}]}, {"n": "Western Australia", "k": 2, "cl": [{"n": "Ability Housing", "i": 64}, {"n": "PrimeX Medical", "i": 63}]}, {"n": "Victoria", "k": 1, "cl": [{"n": "Dulux Group", "i": 83}]}]}, {"c": "Canada", "n": 5, "s": [{"n": "British Columbia", "k": 3, "cl": [{"n": "My House Design", "i": 27}, {"n": "NobleProg", "i": 84}, {"n": "Safe Harbour Informatics", "i": 34}]}, {"n": "Alberta", "k": 1, "cl": [{"n": "Next Gen Men", "i": 25}]}, {"n": "Ontario", "k": 1, "cl": [{"n": "Sutton Summit", "i": 2}]}]}, {"c": "Germany", "n": 3, "s": [{"n": "Berlin", "k": 1, "cl": [{"n": "Matysek Co.", "i": 69}]}, {"n": "Cologne", "k": 1, "cl": [{"n": "Vorreiter Gruppe", "i": 11}]}, {"n": "Munich", "k": 1, "cl": [{"n": "WMK", "i": 86}]}]}, {"c": "United Kingdom", "n": 3, "s": [{"n": "London", "k": 3, "cl": [{"n": "In Practise", "i": 74}, {"n": "Panrix Limited", "i": 12}, {"n": "VIVIDA", "i": 71}]}]}, {"c": "South Africa", "n": 2, "s": [{"n": "Cape Town", "k": 1, "cl": [{"n": "Jackie Nash Consulting", "i": 51}]}, {"n": "Germiston", "k": 1, "cl": [{"n": "Dreymar Industrial", "i": 7}]}]}, {"c": "Belize", "n": 1, "s": [{"n": "Belize City", "k": 1, "cl": [{"n": "Belize Telecommunications", "i": 70}]}]}, {"c": "Chile", "n": 1, "s": [{"n": "Santiago", "k": 1, "cl": [{"n": "Audox Ingenieria", "i": 85}]}]}, {"c": "Dominican Republic", "n": 1, "s": [{"n": "Dominican Republic", "k": 1, "cl": [{"n": "DR Legal Pros", "i": 8}]}]}, {"c": "Italy", "n": 1, "s": [{"n": "Salerno", "k": 1, "cl": [{"n": "Latin Gin", "i": 81}]}]}, {"c": "Mexico", "n": 1, "s": [{"n": "Nuevo León", "k": 1, "cl": [{"n": "Fundación DeAcero", "i": 32}]}]}, {"c": "New Zealand", "n": 1, "s": [{"n": "Queenstown", "k": 1, "cl": [{"n": "Tourism Guides Limited", "i": 3}]}]}, {"c": "Spain", "n": 1, "s": [{"n": "Madrid", "k": 1, "cl": [{"n": "Orbital Studio", "i": 41}]}]}, {"c": "Uruguay", "n": 1, "s": [{"n": "Montevideo", "k": 1, "cl": [{"n": "MiniPak S.A.S", "i": 52}]}]}];
+
+const map = L.map('map',{zoomControl:false,worldCopyJump:true,minZoom:2,maxZoom:18}).setView([28,-30], 3);
+L.control.zoom({position:'bottomright'}).addTo(map);
+
+// CARTO basemaps now require an API key (returns an "API KEY REQUIRED" tile), so use Esri's keyless dark canvas
+const base = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',{
+  attribution:'Tiles &copy; Esri', maxNativeZoom:16, maxZoom:18
+}).addTo(map);
+let switched=false, tileErrs=0;
+base.on('tileerror', ()=>{
+  if(switched) return;
+  if(++tileErrs >= 3){
+    switched=true; map.removeLayer(base); document.body.classList.add('fallback');
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'',subdomains:'abc',maxZoom:19}).addTo(map);
+  }
+});
+
+const icon = L.divIcon({className:'', html:'<div class="pin"><div class="dot"></div></div>',
+  iconSize:[14,14], iconAnchor:[7,7], popupAnchor:[0,-8], tooltipAnchor:[0,-6]});
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const markers = [], bounds = [];
+
+PINS.forEach((p)=>{
+  const m = L.marker([p.lat,p.lng],{icon, riseOnHover:true}).addTo(map);
+  m.bindTooltip(esc(p.client),{className:'name-tip',direction:'top',offset:[0,-4]});
+  m.bindPopup('<div class="pp-name">'+esc(p.client)+'</div>'+
+              '<div class="pp-addr">'+esc(p.address)+'</div>'+
+              '<div class="pp-flag">'+esc(p.city)+' &middot; '+esc(p.country)+'</div>');
+  p._m = m; markers.push(m); bounds.push([p.lat,p.lng]);
+});
+if(bounds.length) map.fitBounds(bounds,{padding:[60,60],maxZoom:5});
+
+function clearActive(){ markers.forEach(mk=>{ const e=mk._icon&&mk._icon.querySelector('.pin'); if(e) e.classList.remove('is-active'); }); }
+function flyToClient(i){
+  clearActive();
+  const p = PINS[i];
+  map.flyTo([p.lat,p.lng], 6, {duration:.9});
+  p._m.openPopup();
+  const e = p._m._icon && p._m._icon.querySelector('.pin'); if(e) e.classList.add('is-active');
+}
+
+const accEl = document.getElementById('acc'), qEl = document.getElementById('q');
+function build(filter){
+  const f = filter.trim().toLowerCase();
+  let html = '', any = false;
+  TREE.forEach(co=>{
+    const coHit = co.c.toLowerCase().includes(f);
+    let states = '', coCount = 0;
+    co.s.forEach(st=>{
+      const stHit = coHit || st.n.toLowerCase().includes(f);
+      const clients = st.cl.filter(c => !f || stHit || c.n.toLowerCase().includes(f));
+      if(!clients.length) return;
+      coCount += clients.length;
+      const open = f ? ' open' : '';
+      states += '<details class="state"'+open+'><summary><span class="chev"></span>'+
+        '<span class="nm">'+esc(st.n)+'</span><span class="badge">'+clients.length+'</span></summary>'+
+        clients.map(c=>'<div class="cl" data-i="'+c.i+'">'+esc(c.n)+'</div>').join('')+'</details>';
+    });
+    if(!states) return;
+    any = true;
+    const open = f ? ' open' : '';
+    html += '<details class="country"'+open+'><summary><span class="chev"></span>'+
+      '<span class="nm">'+esc(co.c)+'</span><span class="badge">'+coCount+'</span></summary>'+states+'</details>';
+  });
+  accEl.innerHTML = any ? html : '<div class="empty">Nothing matches &ldquo;'+esc(filter)+'&rdquo;.</div>';
+  accEl.classList.toggle('searching', !!f);
+}
+accEl.addEventListener('click',e=>{ const r=e.target.closest('.cl'); if(r) flyToClient(+r.dataset.i); });
+// one country open at a time — close siblings so only the selected country shows its cities
+accEl.addEventListener('toggle', function(e){
+  const d = e.target;
+  if (d.classList && d.classList.contains('country') && d.open){
+    accEl.querySelectorAll('details.country[open]').forEach(function(o){ if(o!==d) o.open=false; });
+  }
+}, true);
+qEl.addEventListener('input',()=>build(qEl.value));
+build('');
+
+setTimeout(()=>map.invalidateSize(),60);
+window.addEventListener('resize',()=>map.invalidateSize());
+</script>
+
+<script>
+(function(){
+  if(!window.matchMedia||!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+  var dot=document.createElement('div');dot.className='cur-dot';
+  var ring=document.createElement('div');ring.className='cur-ring';
+  document.body.appendChild(dot);document.body.appendChild(ring);
+  var mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my,lastEcho=0;
+  document.addEventListener('mousemove',function(e){mx=e.clientX;my=e.clientY;dot.style.transform='translate('+mx+'px,'+my+'px)';},{passive:true});
+  function spawnEcho(){
+    var ec=document.createElement('div');ec.className='cur-echo';
+    ec.style.left=mx+'px';ec.style.top=my+'px';ec.style.width='10px';ec.style.height='10px';ec.style.margin='-5px 0 0 -5px';ec.style.opacity='0.55';ec.style.transition='all .9s ease-out';
+    document.body.appendChild(ec);
+    requestAnimationFrame(function(){ec.style.width='58px';ec.style.height='58px';ec.style.margin='-29px 0 0 -29px';ec.style.opacity='0';});
+    setTimeout(function(){ec.remove();},920);
+  }
+  function loop(){
+    rx+=(mx-rx)*0.18;ry+=(my-ry)*0.18;
+    ring.style.transform='translate('+rx+'px,'+ry+'px)';
+    var now=performance.now();
+    if(now-lastEcho>600){lastEcho=now;spawnEcho();}
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+  document.addEventListener('mouseleave',function(){dot.classList.add('is-hidden');ring.classList.add('is-hidden');});
+  document.addEventListener('mouseenter',function(){dot.classList.remove('is-hidden');ring.classList.remove('is-hidden');});
+})();
+</script>
+</body>
+</html>
