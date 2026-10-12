@@ -795,7 +795,7 @@
         <div class="qt-det" data-q="det" hidden><ul data-q="sched"></ul></div>
         <p class="qt-fine">Prices in USD. Taxes are not included and are added to your invoice.</p>
         <p class="qt-fine">Not included: connecting monday to other tools, such as Meta, WhatsApp or your website.</p>
-        <a href="https://calendly.com/discoverycall-alejandro/demo-your-first-monday-app" class="btn-primary">I want to see my demo <i class="msi" data-i="arrow_forward"></i></a>
+        <a href="https://calendly.com/discoverycall-alejandro/demo-your-first-monday-app" class="btn-primary" data-q="cta">I want to see my demo <i class="msi" data-i="arrow_forward"></i></a>
       </aside>
     </div>
   </div>
@@ -1870,6 +1870,16 @@
           c.className = ev.some(function(e){ return e.who === who && e.w === i + 1; }) ? who : '';
         });
       });
+
+      // Carry the quote into Calendly: a1 prefills the event's first custom question (readable),
+      // utm_content is a fixed key=value string for n8n to parse into monday columns.
+      var cta = q('cta'), base = cta.getAttribute('data-base') || cta.getAttribute('href').split('?')[0];
+      cta.setAttribute('data-base', base);
+      var summary = 'Whatever Tech ' + money(fees) + ': ' + T.base
+        + (S.extra ? ' + ' + S.extra + ' × ' + T.apps : '') + (S.portal ? ' + ' + T.portal : '')
+        + ' · monday ' + money(mon) + ' ' + (an ? T.peryear : T.permonth) + ': ' + users + ' ' + T.users + ', ' + T.plan + ' ' + (plan === 'pro' ? 'Pro' : 'Starter');
+      var key = ['apps=' + (2 + S.extra), 'extra=' + S.extra, 'portal=' + (S.portal ? 1 : 0), 'users=' + users, 'bill=' + S.bill, 'plan=' + plan, 'fees=' + fees, 'monday=' + mon].join(';');
+      cta.setAttribute('href', base + '?a1=' + encodeURIComponent(summary) + '&utm_source=landing&utm_medium=quoter&utm_content=' + encodeURIComponent(key));
     }
     q('aMinus').onclick = function(){ if (S.extra > 0) { S.extra--; render(); } };
     q('aPlus').onclick = function(){ if (S.extra < CFG.maxExtra) { S.extra++; render(); } };
