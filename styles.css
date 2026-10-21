@@ -2325,3 +2325,26 @@ button.qt-app:focus-visible { outline: 2px solid var(--red); outline-offset: 2px
 @keyframes qtLook { 0%, 30%, 82%, 100% { transform: none; } 42%, 68% { transform: translate(-1.2%, 0.3%) rotate(-5deg); } }
 .qt-will-bot .bot-rings { bottom: -9%; }
 @media (prefers-reduced-motion: reduce) { .qw-arm, .qw-head { animation: none; } }
+
+/* Founder avatars: Christopher and Orlando sit a bit lower in the circle; Alejandro and Rodrigo closer */
+.pq-avatar img.pq-avatar-low { transform: scale(1.12) translateY(6%); }
+.pq-avatar img[src$="alejandro-avatar.png"] { transform-origin: 50% 34%; transform: scale(1.38); }
+.pq-avatar img.pq-avatar-rod { transform-origin: 52% 30%; transform: scale(1.38) translate(1.5%, 0); }
+.pq-avatar img.pq-avatar-rod { transform-origin: 50% 32%; transform: scale(1.62); }
+.pq-avatar img.pq-avatar-low[src$="orlando-avatar.png"] { transform: scale(1.26) translateY(9%); }
+
+/* Christopher and Orlando: wider hit area so the cursor brackets frame the name like the others */
+.pq-third .pq-cite-link, .pq-fourth .pq-cite-link { padding: 10px 28px 10px 10px; margin: -10px -28px -10px -10px; }
+
+/* Founders: current or past role outside Whatever Tech, and a smaller size for longer quotes */
+.pq-bio { font-size: 13px; color: var(--text-2); letter-spacing: 0; margin-top: 1px; }
+.pq-featured .pq-text.pq-long { font-size: clamp(22px, 2.3vw, 31px); line-height: 1.18; letter-spacing: -0.02em; }
+#who-we-are .pq-cite-link { padding: 10px 28px 10px 10px; margin: -10px -28px -10px -10px; }
+
+/* Founder quote borrowed from a book: the source sits under the quote, before the signature */
+.pq-source { margin-top: 14px; font-size: 14px; color: var(--text-3); letter-spacing: 0; }
+.pq-source cite { font-style: italic; color: var(--text-2); }
+.pq-avatar img.pq-avatar-low[src$="christopher-avatar.png"] { transform: scale(1.26) translateY(12%); }
+.pq-avatar img.pq-avatar-low[src$="orlando-avatar.png"] { transform: scale(1.38) translateY(16%); }
+/* Christopher and Orlando avatars come already framed (face lower, wall extended above): no transform */
+.pq-avatar img.pq-avatar-low, .pq-avatar img.pq-avatar-low[src$="christopher-avatar.png"], .pq-avatar img.pq-avatar-low[src$="orlando-avatar.png"] { transform: none; }
