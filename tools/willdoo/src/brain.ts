@@ -256,13 +256,13 @@ export const SECTIONS: Section[] = [
       en: [
         { title: "Tap your teams", text: "In \"Your system\", pick the apps you need and the total updates." },
         { title: "Fully custom from $6,500", text: "$1,500 for the AI data architecture plus $2,500 per app, minimum two." },
-        { title: "Your servers", text: "On your own servers there's no hosting fee and no SaaS licenses." },
+        { title: "Your servers", text: "$1,500 one-time to install everything on your servers, then no monthly fees and no SaaS licenses." },
         { title: "First year vs 3 years", text: "The cards under the summary compare what you'd pay over time." },
       ],
       es: [
         { title: "Toca tus equipos", text: "En «Tu sistema» elige las apps que necesitas y el total se actualiza." },
         { title: "A medida desde $6,500", text: "$1,500 de la arquitectura de datos con IA más $2,500 por app, mínimo dos." },
-        { title: "Tus servidores", text: "En tus propios servidores no hay costo de hosting ni licencias SaaS." },
+        { title: "Tus servidores", text: "$1,500 pago único para instalar todo en tus servidores, y después ni mensualidades ni licencias SaaS." },
         { title: "Primer año vs 3 años", text: "Las tarjetas bajo el resumen comparan lo que pagarías en el tiempo." },
       ],
     },
@@ -425,12 +425,21 @@ const WHATSAPP_INVITE: Line = t({
 /** Invitation built on a question you could ask about the section in view. */
 const ASK_ABOUT = t({ en: 'Ask me', es: 'Pregúntame' })
 let askTurn = 0
-function sectionInvite(): Line {
-  const s = byId(section)
+function sectionInvite(id = section): Line {
+  const s = byId(id)
   const asks = s?.starters[LANG].filter((q) => !/^(take me|llévame)/i.test(q)) ?? []
   if (!asks.length) return pick(INVITES[LANG])
   const q = asks[askTurn++ % asks.length]
-  return { title: ASK_ABOUT, text: t({ en: `Click me and ask: "${q}" 💬`, es: `Haz clic en mí y pregúntame: «${q}» 💬` }), section }
+  return { title: ASK_ABOUT, text: t({ en: `Click me and ask: "${q}" 💬`, es: `Haz clic en mí y pregúntame: «${q}» 💬` }), section: id }
+}
+
+/** Something about a section you clicked in: the next thing he hasn't told about it, else a question to ask him. */
+export function sectionTip(id: string): Line | null {
+  if (!byId(id)) return null
+  const tip = byId(id)!.tips[LANG].find((l) => !told.has(l.text))
+  if (!tip) return sectionInvite(id)
+  told.add(tip.text)
+  return { ...tip, section: id }
 }
 /** Titles that already invite a click (the bubble then skips its click-me hint). */
 export const isInvite = (title: string) =>
@@ -513,6 +522,8 @@ interface Intent {
   section?: string
   /** Says more than the FAQ entry on the same topic, so it wins even when the FAQ asks the same question. */
   overFaq?: boolean
+  /** Generic ("how much does it cost?"): any more specific answer that also matches wins over it. */
+  weak?: boolean
 }
 
 const PRICING_EN =
@@ -536,23 +547,24 @@ const INTENTS: Intent[] = [
   {
     keys: ['cuanto cuesta', 'cuanto vale', 'cuanto sale', 'precio', 'precios', 'costo', 'cuesta', 'cotiz', 'how much', 'price', 'pricing', 'cost', 'quote', 'budget', 'presupuesto', 'tarifa'],
     answer: { en: PRICING_EN, es: PRICING_ES },
+    weak: true,
     follow: { en: ["What's included?", 'Custom or monday.com?', 'How does hosting work?'], es: ['¿Qué está incluido?', '¿A medida o sobre monday.com?', '¿Cómo funciona el hosting?'] },
     section: 'pricing',
   },
   {
     keys: ['incluido', 'incluye', 'que trae', 'included', 'include', 'what do i get', 'que recibo', 'que obtengo'],
     answer: {
-      en: 'Every program includes data transfer (up to 2 working days of data volume; more is quoted before we start), a companion bot for your team and your branding on every app. The AI data architecture ($1,500) is the base of your system. Integrations with other systems are evaluated and quoted separately.',
-      es: 'Cada programa incluye la migración de datos (hasta 2 días de trabajo de volumen de datos; si hace falta más, se cotiza antes de empezar), un bot de acompañamiento para tu equipo y tu marca en cada app. La arquitectura de datos con IA ($1,500) es la base de tu sistema. Las integraciones con otros sistemas se evalúan y cotizan aparte.',
+      en: 'Every program includes data transfer (up to 2 working days of data volume; more is quoted before we start), a companion bot for your team and your branding on every app. The AI data architecture ($1,500) is the base of your system. Integration with your invoicing software is $1,000 one-time; other integrations are evaluated and quoted separately.',
+      es: 'Cada programa incluye la migración de datos (hasta 2 días de trabajo de volumen de datos; si hace falta más, se cotiza antes de empezar), un bot de acompañamiento para tu equipo y tu marca en cada app. La arquitectura de datos con IA ($1,500) es la base de tu sistema. La integración con tu facturación cuesta $1,000 pago único; las demás integraciones se evalúan y cotizan aparte.',
     },
     follow: { en: ['How much does it cost?', 'How does hosting work?'], es: ['¿Cuánto cuesta?', '¿Cómo funciona el hosting?'] },
     section: 'pricing',
   },
   {
-    keys: ['hosting', 'servidor', 'servidores', 'server', 'servers', 'alojamiento', 'nube', 'cloud', 'infraestructura', 'infrastructure'],
+    keys: ['hosting', 'servidor', 'servidores', 'server', 'servers', 'alojamiento', 'nube', 'cloud', 'infraestructura', 'infrastructure', 'instalacion', 'instalar', 'installation', 'install', 'respaldo', 'backup'],
     answer: {
-      en: "Fully custom, you choose where it runs. On your own servers there's no hosting fee. On ours: up to 20 users, $100 a month or $1,000 a year; 21 to 50 users, $200 or $2,000; then $200 more for every 50 users. Either way, the code is yours.",
-      es: 'A medida, tú eliges dónde corre. En tus propios servidores no hay costo de hosting. En los nuestros: hasta 20 usuarios, $100 al mes o $1,000 al año; de 21 a 50, $200 o $2,000; después, $200 más por cada 50 usuarios. En cualquier caso, el código es tuyo.',
+      en: "Fully custom, you choose where it lives. On your own servers it's $1,500 one-time for the whole system: in week 4 we put it live there (if you don't have servers, you sign up with your provider and we set them up), and you never pay us for infrastructure; hosting, backups and security you contract with your provider. On ours there's no installation fee: up to 20 users, $100 a month or $1,000 a year; 21 to 50 users, $200 or $2,000; then $200 more for every 50 users. Either way, the code is yours.",
+      es: 'A medida, tú eliges dónde vive. En tus propios servidores son $1,500 pago único por todo el sistema: en la semana 4 lo ponemos en producción ahí (si no tienes, los contratas con tu proveedor y te los montamos) y nunca nos pagas infraestructura; el hosting, los respaldos y la seguridad los contratas con tu proveedor. En los nuestros no hay pago de instalación: hasta 20 usuarios, $100 al mes o $1,000 al año; de 21 a 50, $200 o $2,000; después, $200 más por cada 50 usuarios. En cualquier caso, el código es tuyo.',
     },
     follow: { en: ['Custom or monday.com?', 'How much does it cost?'], es: ['¿A medida o sobre monday.com?', '¿Cuánto cuesta?'] },
     section: 'pricing',
@@ -560,8 +572,8 @@ const INTENTS: Intent[] = [
   {
     keys: ['monday', 'a medida', 'custom', 'personalizado', 'saas', 'licencia', 'licencias', 'license', 'licenses', 'vibe'],
     answer: {
-      en: 'Both give you the same structure: one operating system for your data and an app for every team. Fully custom is our main path: no SaaS licenses, and on your own servers no hosting fee. With 2 apps the first year is $6,500, against $9,840 on monday.com with 10 users ($20,520 over 3 years, because of the licenses). On monday.com it runs in your own monday account.',
-      es: 'Los dos te dan la misma estructura: un sistema operativo para tu información y una app para cada equipo. A medida es nuestro camino principal: sin licencias SaaS y, en tus servidores, sin costo de hosting. Con 2 apps, el primer año son $6,500, contra $9,840 sobre monday.com con 10 usuarios ($20,520 en 3 años, por las licencias). Sobre monday.com corre en tu propia cuenta de monday.',
+      en: 'Both give you the same structure: one operating system for your data and an app for every team. Fully custom is our main path: no SaaS licenses, and on your own servers no monthly fees. With 2 apps on your servers it\'s $8,000 the first year and the same over 3 years ($1,500 installation included), against $9,840 on monday.com with 10 users ($20,520 over 3 years, because of the licenses). On monday.com it runs in your own monday account.',
+      es: 'Los dos te dan la misma estructura: un sistema operativo para tu información y una app para cada equipo. A medida es nuestro camino principal: sin licencias SaaS y, en tus servidores, sin mensualidades. Con 2 apps en tus servidores son $8,000 el primer año y lo mismo en 3 años (con la instalación de $1,500), contra $9,840 sobre monday.com con 10 usuarios ($20,520 en 3 años, por las licencias). Sobre monday.com corre en tu propia cuenta de monday.',
     },
     follow: { en: ['How much does it cost?', 'How does hosting work?'], es: ['¿Cuánto cuesta?', '¿Cómo funciona el hosting?'] },
     section: 'pricing',
@@ -576,13 +588,22 @@ const INTENTS: Intent[] = [
     section: 'how-we-work',
   },
   {
-    keys: ['pago', 'pagos', 'se paga', 'pagar', 'payment', 'payments', 'pay', 'cuotas', 'installments', 'cancelar', 'cancel', 'suscripcion', 'subscription', 'contrato', 'contract', 'permanencia', 'stripe', 'tarjeta', 'card', 'transferencia', 'transfer', 'wire', 'medio de pago', 'metodo de pago', 'payment method', 'factura', 'invoice'],
+    keys: ['pago', 'pagos', 'se paga', 'pagar', 'payment', 'payments', 'pay', 'cuotas', 'installments', 'cancelar', 'cancel', 'suscripcion', 'subscription', 'contrato', 'contract', 'permanencia', 'stripe', 'tarjeta', 'card', 'transferencia', 'transfer', 'wire', 'medio de pago', 'metodo de pago', 'payment method'],
     answer: {
       en: "It's a one-time payment for the program, not a subscription: 50% in week 1 and 50% in week 4, once your apps do what you asked. You pay through a Stripe link to Whatever Tech LLC (Florida), or we can arrange it with you directly in a meeting. Prices are in USD and taxes are added to your invoice.",
       es: 'Es un pago único por el programa, no una suscripción: 50% en la semana 1 y 50% en la semana 4, cuando tus apps hacen lo que pediste. Pagas a través de un link de Stripe a Whatever Tech LLC (Florida), o lo coordinamos contigo directamente en una reunión. Los precios están en USD y los impuestos se agregan en la factura.',
     },
     overFaq: true,
     follow: { en: ["What's your guarantee?", 'How much does it cost?'], es: ['¿Cuál es su garantía?', '¿Cuánto cuesta?'] },
+    section: 'pricing',
+  },
+  {
+    keys: ['ronda', 'rondas', 'round', 'rounds', 'mejoras adicionales', 'mas mejoras', 'more improvements', 'extra improvements', 'despues de la entrega', 'after delivery'],
+    answer: {
+      en: 'Every program includes improvement rounds until delivery in week 8: 3 per app fully custom, 4 on monday.com, each with 15 to 25 improvements. After week 8, each extra round is $500 per app, wherever your system runs.',
+      es: 'Cada programa incluye rondas de mejora hasta la entrega en la semana 8: 3 por app a medida y 4 sobre monday.com, cada una con 15 a 25 mejoras. Después de la semana 8, cada ronda adicional cuesta $500 por app, viva donde viva tu sistema.',
+    },
+    follow: { en: ['What happens after week 8?', 'How much does it cost?'], es: ['¿Qué pasa después de la semana 8?', '¿Cuánto cuesta?'] },
     section: 'pricing',
   },
   {
@@ -659,10 +680,10 @@ const INTENTS: Intent[] = [
     section: 'pricing',
   },
   {
-    keys: ['integracion', 'integraciones', 'integrar', 'integration', 'integrations', 'whatsapp', 'meta', 'api', 'erp', 'facturacion'],
+    keys: ['integracion', 'integraciones', 'integrar', 'integration', 'integrations', 'whatsapp', 'meta', 'api', 'erp', 'facturacion', 'facturador', 'invoicing', 'billing software', 'contable', 'accounting'],
     answer: {
-      en: 'We connect your system with tools like Meta, WhatsApp, your website or your accounting software through an orchestrator (we use n8n). Integrations are evaluated and quoted separately from the program.',
-      es: 'Conectamos tu sistema con herramientas como Meta, WhatsApp, tu web o tu sistema contable a través de un orquestador (usamos n8n). Las integraciones se evalúan y cotizan aparte del programa.',
+      en: 'We connect your system with tools like Meta, WhatsApp, your website or your accounting software through an orchestrator (we use n8n). Integration with your invoicing software is $1,000 one-time: when you invoice, the invoice is issued there and its number flows into collections on its own. Other integrations are evaluated and quoted separately from the program.',
+      es: 'Conectamos tu sistema con herramientas como Meta, WhatsApp, tu web o tu sistema contable a través de un orquestador (usamos n8n). La integración con tu facturación cuesta $1,000 pago único: al facturar, la factura se emite en tu facturador y su número entra solo a cobranza. Las demás integraciones se evalúan y cotizan aparte del programa.',
     },
     follow: { en: ['What is an orchestrator?', 'What is n8n?'], es: ['¿Qué es un orquestador?', '¿Qué es n8n?'] },
     section: 'faq',
@@ -909,7 +930,8 @@ function answer(question: string): Reply {
   let best: Intent | null = null
   let score = 0
   for (const intent of INTENTS) {
-    const n = intent.keys.reduce((c, k) => (has(q, k) ? c + 1 : c), 0)
+    const hits = intent.keys.reduce((c, k) => (has(q, k) ? c + 1 : c), 0)
+    const n = intent.weak ? Math.min(hits, 1) * 0.5 : hits
     if (n > score) {
       best = intent
       score = n

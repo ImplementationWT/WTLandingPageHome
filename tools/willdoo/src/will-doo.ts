@@ -328,6 +328,8 @@ export interface WillDooHandle {
   remark(line: () => Line, el: Element, done: (said: boolean) => void): void
   /** You settled on another section: a bubble about the previous one closes and he comments on this one soon. */
   sectionChanged(id: string): void
+  /** You clicked something: he says this about it right away, looking at it. */
+  react(line: Line, el: Element): void
 }
 
 /** hit: a transparent button kept over his body so he can be clicked (the canvas sits under the content). */
@@ -1040,6 +1042,15 @@ export function startWillDoo(
     },
     talk() {
       talkUntil = time + 1.4
+    },
+    react(line, el) {
+      if (hidden) return
+      say(null)
+      if (!say(line, 4.5)) return
+      lookEl = el
+      lookUntil = time + 2.5
+      talkUntil = time + 1.2
+      nextChatter = Math.max(nextChatter, bubbleUntil + rand(6, 10)) // hold his own comments for a bit
     },
     sectionChanged(id) {
       if (bubbleUntil && saying?.section && saying.section !== id) say(null)

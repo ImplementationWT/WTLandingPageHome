@@ -3,6 +3,7 @@
 // the chat panel where he answers questions about the page and scrolls to any section you ask for.
 // Built by tools/willdoo/build.sh into assets/willdoo/. Desktop only: a fine pointer is required.
 import { LANG, SELF_SPOTTED, chatIntro, getSection, isInvite, markActivity, reply, setSection, type Reply } from './brain'
+import { explainClick } from './clicks'
 import { hasFinePointer, startNebula } from './space'
 import type { WillDooHandle } from './will-doo'
 
@@ -218,6 +219,28 @@ function boot() {
     },
     { threshold: 0.6 },
   )
+
+  // --- Clicks anywhere on the page: he explains what you clicked, short and plain. Read a moment after the
+  // click so the page has reacted (a quoter option selected, an FAQ opened). Clicks on plain content get a
+  // fact about the section, but not on every click.
+  let lastSaid = ''
+  let lastAt = 0
+  let lastPlainAt = 0
+  addEventListener('click', (e) => {
+    const target = e.target as Element | null
+    if (!handle || !target?.closest || target.closest('[data-will-doo], .dfm, .nda, .qm') || e.button !== 0) return
+    setTimeout(() => {
+      const r = explainClick(target)
+      const now = performance.now()
+      if (!r || !handle) return
+      if (r.line.text === lastSaid && now - lastAt < 4000) return
+      if (!r.interactive && now - lastPlainAt < 8000) return
+      if (!r.interactive) lastPlainAt = now
+      lastSaid = r.line.text
+      lastAt = now
+      handle.react(r.line, target)
+    }, 60)
+  })
 
   // three.js is big: load it once the page has settled.
   const load = () =>
