@@ -1,0 +1,12 @@
+{
+  "name": "wt-landing-willdoo",
+  "private": true,
+  "description": "Will Doo and the nebula for the landing page. Ported from WTProposalPlatform; build with ./build.sh",
+  "scripts": { "build": "./build.sh" },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "three": "0.186.1",
+    "@types/three": "0.186.0",
+    "typescript": "^5.6.0"
+  }
+}

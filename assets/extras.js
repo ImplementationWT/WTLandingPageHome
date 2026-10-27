@@ -60,6 +60,8 @@
     if (!LEAD_HOOK) { if (window.console) console.warn('[WT] Lead not sent: LEAD_HOOK is empty', rec); return; }
     try { fetch(LEAD_HOOK, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(rec), keepalive: true }); } catch (_) {}
   }
+  // Will Doo's chat sends the WhatsApp numbers people leave him through the same hook.
+  window.wtSendLead = send;
 
   /* ───────── Demo forms ───────── */
   function demoInfo(btn){
