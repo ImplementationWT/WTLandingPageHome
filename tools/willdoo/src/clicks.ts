@@ -84,10 +84,130 @@ function quoterLine(el: Element): Line | null {
   return null
 }
 
+// --- Things that aren't buttons ------------------------------------------------------------------
+
+/** The tools in the strip under the hero: what each one is, in a few words. */
+const TOOLS: Record<string, [string, string]> = {
+  Zapier: ['no-code automation between apps', 'automatización sin código entre apps'],
+  n8n: ['the orchestrator we use to connect your tools', 'el orquestador que usamos para conectar tus herramientas'],
+  Slack: ['chat for teams', 'chat para equipos'],
+  Notion: ['docs and wikis for teams', 'documentos y wikis para equipos'],
+  Airtable: ['a spreadsheet that works like a database', 'una hoja de cálculo que funciona como base de datos'],
+  'Google Workspace': ["Google's suite: email, docs, drive and calendar", 'la suite de Google: correo, documentos, drive y calendario'],
+  Gmail: ["Google's email", 'el correo de Google'],
+  'Google Sheets': ["Google's spreadsheets", 'las hojas de cálculo de Google'],
+  'Google Drive': ['file storage in the cloud', 'almacenamiento de archivos en la nube'],
+  'Google Calendar': ['calendars and meetings', 'calendarios y reuniones'],
+  HubSpot: ['CRM and marketing', 'CRM y marketing'],
+  Stripe: ["online payments (it's also how you pay us)", 'pagos en línea (también es como nos pagas)'],
+  OpenAI: ['AI models, the makers of ChatGPT', 'modelos de IA, los creadores de ChatGPT'],
+  Twilio: ['SMS, calls and WhatsApp messages', 'SMS, llamadas y mensajes de WhatsApp'],
+  Calendly: ["scheduling (it's how you book a call with us)", 'agenda de reuniones (así agendas una llamada con nosotros)'],
+  Typeform: ['forms and surveys', 'formularios y encuestas'],
+  Mailchimp: ['email marketing', 'email marketing'],
+  Zoom: ['video calls', 'videollamadas'],
+  Intercom: ['chat and support for your customers', 'chat y soporte para tus clientes'],
+  Asana: ['project management', 'gestión de proyectos'],
+  Trello: ['task boards', 'tableros de tareas'],
+  QuickBooks: ['accounting and invoicing', 'contabilidad y facturación'],
+  DocuSign: ['electronic signatures', 'firmas electrónicas'],
+  Pipedrive: ['a CRM for sales teams', 'un CRM para equipos de ventas'],
+  Miro: ['an online whiteboard', 'una pizarra en línea'],
+  'Read AI': ['AI notes for your meetings', 'notas con IA de tus reuniones'],
+  Claude: ["Anthropic's AI, which answers your questions with your live data", 'la IA de Anthropic, que responde tus preguntas con tus datos en vivo'],
+  Loom: ['quick video messages', 'mensajes en video'],
+  PandaDoc: ['proposals and contracts', 'propuestas y contratos'],
+  ElevenLabs: ['AI voices', 'voces con IA'],
+  Higgsfield: ['AI video', 'video con IA'],
+}
+
+/** The page's stats, by the words next to the number. */
+function statLine(label: string, value: string): Line {
+  const k = label.toLowerCase()
+  const say = (en: string, es: string) => line(`${value} ${label}`.trim(), L(en, es))
+  if (/implement|system|sistema/.test(k)) return say('Each one live with a real team, not a slide deck.', 'Cada uno en producción con un equipo real, no en una presentación.')
+  if (/countr|pa[ií]s/.test(k)) return say('Clients on 5 continents. Everything is remote, in your timezone and language.', 'Clientes en 5 continentes. Todo es remoto, en tu zona horaria y tu idioma.')
+  if (/hour|hora/.test(k)) return say('Hours of manual work our clients no longer do: the apps do it.', 'Horas de trabajo manual que nuestros clientes ya no hacen: lo hacen las apps.')
+  if (/industr/.test(k)) return say("The industry changes; the problem doesn't.", 'La industria cambia; el problema no.')
+  return say('A real number from our projects.', 'Un número real de nuestros proyectos.')
+}
+
+/** Logos, badges, photos, stats and other things on the page that aren't buttons. */
+function thingLine(t: Element): Line | null {
+  const img = t.closest('img')
+  const alt = img?.getAttribute('alt') || ''
+
+  if (t.closest('.cred-chip.monday'))
+    return line(L('Official monday.com Partner', 'Partner Oficial de monday.com'), L('We are official monday.com partners and Expert Consultants, in the top 1%.', 'Somos partners oficiales de monday.com y Consultores Expertos, en el top 1%.'))
+  if (t.closest('.cred-chip.upwork'))
+    return line('Upwork', L("The world's largest marketplace for hiring independent experts, with verified reviews and payments. 100+ of our projects are reviewed there.", 'El marketplace más grande del mundo para contratar expertos independientes, con reseñas y pagos verificados. Ahí tenemos 100+ proyectos con reseña.'))
+  if (t.closest('.cred-chip.badges'))
+    return line('Top Rated Plus', L("Upwork's badge for its best talent: very high client satisfaction on large, long-term projects.", 'La insignia de Upwork para su mejor talento: satisfacción altísima en proyectos grandes y de largo plazo.'))
+  if (t.closest('.hero-badges'))
+    return line(L('monday.com certifications', 'Certificaciones de monday.com'), L('Professional Services, Work Management and Sales: certified by monday itself.', 'Professional Services, Work Management y Sales: certificados por la propia monday.'))
+  if (t.closest('.ins-badge'))
+    return line(L("We're insured", 'Estamos asegurados'), L('Professional liability with biBERK (Berkshire Hathaway) and cyber and data with Hiscox. If something goes wrong, you are covered.', 'Responsabilidad profesional con biBERK (Berkshire Hathaway) y ciber y datos con Hiscox. Si algo sale mal, estás cubierto.'))
+  if (t.closest('.us-seal'))
+    return line(L('Registered U.S. company', 'Empresa registrada en EE. UU.'), L('Whatever Tech LLC, Florida: you sign with a U.S. company.', 'Whatever Tech LLC, Florida: firmas con una empresa de Estados Unidos.'))
+  if (t.closest('.story-photo'))
+    return line(L('Part of the team', 'Parte del equipo'), L('Architects, developers, automation engineers and industrial engineers, working remotely across 5 continents.', 'Arquitectos, desarrolladores, ingenieros de automatización e ingenieros industriales, trabajando remoto en 5 continentes.'))
+  if (img && t.closest('.tools-track')) {
+    const d = TOOLS[alt]
+    return line(alt, `${d ? `${L(d[0], d[1])[0].toUpperCase()}${L(d[0], d[1]).slice(1)}. ` : ''}${L('We connect it to your system when you need it.', 'La conectamos a tu sistema cuando la necesitas.')}`)
+  }
+  if (img && t.closest('.logo-wall'))
+    return line(alt, L('One of the 100+ companies that already trusted us.', 'Una de las más de 100 empresas que ya confiaron en nosotros.'))
+  const flag = t.closest('.flag-item')
+  if (flag)
+    return line(txt(flag), L('We have clients there: 100+ implementations across 15+ countries, all remote.', 'Tenemos clientes ahí: más de 100 implementaciones en más de 15 países, todo remoto.'))
+  const stat = t.closest('.hero-stat, .story-stat')
+  if (stat) return statLine((txt(stat.querySelector('.ss-k')) || txt(stat).replace(txt(stat.querySelector('strong')), '')).trim(), txt(stat.querySelector('strong, .ss-v')))
+  const big = t.closest('.case-bigstat')
+  if (big) return line(`${txt(big.querySelector('.cb-v'))} ${txt(big.querySelector('.cb-k')).toLowerCase()}`, L('A real result from this client, measured after the system went live.', 'Un resultado real de este cliente, medido con el sistema ya en producción.'))
+  const caseCard = t.closest('.case-feature')
+  if (caseCard && t.closest('.case-logo, .case-clientline, .case-parent'))
+    return line(txt(caseCard.querySelector('.case-clientline')).slice(0, 70), txt(caseCard.querySelector('.case-h3')))
+  if (t.closest('.review-card, .rv-card, .reviews-block article'))
+    return line(L('A verified review', 'Una reseña verificada'), L('Written on Upwork by a real client after the project closed.', 'Escrita en Upwork por un cliente real al cerrar el proyecto.'))
+  const pain = t.closest('.pain-item')
+  if (pain)
+    return t.closest('.pain-item')?.querySelector('.text-before')
+      ? line(L('Sound familiar?', '¿Te suena?'), L(`${txt(pain)} That one goes away when every client and task has an owner in one system.`, `${txt(pain)} Esa desaparece cuando cada cliente y cada tarea tiene dueño en un solo sistema.`))
+      : line(L('In 8 weeks', 'En 8 semanas'), txt(pain))
+  if (t.closest('.gtee-seal'))
+    return line(L('Our guarantee', 'Nuestra garantía'), L("If an app doesn't do what you asked by week 4, we fix it in 10 days or refund your first payment.", 'Si en la semana 4 una app no hace lo que pediste, la arreglamos en 10 días o te devolvemos el primer pago.'))
+  if (t.closest('.pay-line'))
+    return line(L('How you pay', 'Cómo pagas'), L('50% in week 1 and 50% in week 4, through a Stripe link to Whatever Tech LLC.', '50% en la semana 1 y 50% en la semana 4, con un link de Stripe a Whatever Tech LLC.'))
+  if (t.closest('.qt-layer.os'))
+    return line(L('AI operating system', 'Sistema operativo con IA'), L('The back-end that connects all your data, so every app works on the same information.', 'El back-end que conecta toda tu información, para que todas las apps trabajen sobre los mismos datos.'))
+  if (t.closest('.qt-layer.db'))
+    return line(L('AI data architecture', 'Arquitectura de datos con IA'), L('The base of everything: we map your business data and design its structure before building any app.', 'La base de todo: mapeamos la información de tu negocio y diseñamos su estructura antes de construir cualquier app.'))
+  if (t.closest('.qt-years'))
+    return line(L('First year vs 3 years', 'Primer año vs 3 años'), L('Everything you would pay over time, so you can compare it with SaaS licenses.', 'Todo lo que pagarías en el tiempo, para compararlo con licencias SaaS.'))
+  if (img && alt) return line(alt, sectionTip(t.closest('section[id]')?.id || '')?.text || '')
+  return null
+}
+
+/** Any card with a heading: what it's about, in its own first words. */
+function cardLine(t: Element): Line | null {
+  const HEAD = 'h3, h4, .moment-title, .sc-name, .step-name, .demo-ind, b'
+  for (let el: Element | null = t, i = 0; el && i < 5 && !el.matches('section, .container'); el = el.parentElement, i++) {
+    const head = el.matches(HEAD) ? el : el.querySelector(HEAD)
+    const all = txt(el)
+    if (!head || all.length > 700) continue
+    const title = txt(head)
+    // Its paragraph when it has one (not the small labels around the heading), else the rest of its text.
+    const p = [...el.querySelectorAll('p')].find((x) => x !== head && txt(x).length > 15)
+    const body = p ? txt(p) : all.replace(title, '').trim()
+    if (title && body.length > 15) return line(title.replace(/\.$/, ''), first(body))
+  }
+  return null
+}
+
 /** Explanation for a click, or null when there's nothing to say (e.g. a link that leaves the page). */
 export function explainClick(target: Element): { line: Line; interactive: boolean } | null {
   // Something made to be clicked (a button, a link, a card that opens…), or else the plain content clicked.
-  const control = target.closest('a, button, input, [onclick], [data-app], .ck, .lock-card')
+  const control = target.closest('a, button, input, [onclick], .wv.log .cd, [data-app], .ck, .lock-card')
   const el = control || target
   const sec = target.closest('section[id], #trust')?.id || ''
   const ok = (l: Line | null) => (l ? { line: l, interactive: !!control } : null)
@@ -95,6 +215,12 @@ export function explainClick(target: Element): { line: Line; interactive: boolea
   if (el.closest('#quoter')) {
     const l = quoterLine(el)
     if (l) return ok(l)
+  }
+
+  // Not a button: a logo, a badge, a stat, a photo… (before the hero apps, whose area holds the badges too)
+  if (!control) {
+    const l = thingLine(target)
+    if (l) return { line: l, interactive: true }
   }
 
   // Links
@@ -116,6 +242,10 @@ export function explainClick(target: Element): { line: Line; interactive: boolea
 
   // Hero: the three live apps
   if (el.closest('.happ-win, .hero-stage')) {
+    if (el.matches('.cd')) {
+      const what = txt(el.querySelector('b'))
+      return ok(line(what || L('Logistics team', 'Equipo de logística'), `${txt(el.querySelector('.cl'))}. ${L('Logistics sees it on the phone, and Sales and Admin see the same data on their screens.', 'Logística lo ve en el celular, y Ventas y Administración ven la misma información en sus pantallas.')}`.replace(/^\. /, '')))
+    }
     if (el.matches('.ck')) return ok(line(L('Checklist from the phone', 'Checklist desde el celular'), L('The driver ticks each step and the office sees it live.', 'El chofer marca cada paso y la oficina lo ve en vivo.')))
     const team = txt(el.closest('.happ-win')?.querySelector('.wc-label')) || L('Logistics team', 'Equipo de logística')
     const view = el.matches('button') ? txt(el) : ''
@@ -165,6 +295,12 @@ export function explainClick(target: Element): { line: Line; interactive: boolea
     return ok(line(L('In short', 'En corto'), first(txt(faq.querySelector('.faq-a')))))
   }
   if (el.matches('.faq-more')) return ok(line(L('All 21 questions', 'Las 21 preguntas'), L('Or skip the reading: click me and ask.', 'O sáltate la lectura: haz clic en mí y pregúntame.')))
+
+  // Any other card, read from its heading.
+  if (!control) {
+    const c = cardLine(target)
+    if (c) return { line: c, interactive: false }
+  }
 
   // Anything else in a section: a fact about where you clicked.
   if (sec) {

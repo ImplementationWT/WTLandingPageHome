@@ -220,9 +220,9 @@ function boot() {
     { threshold: 0.6 },
   )
 
-  // --- Clicks anywhere on the page: he explains what you clicked, short and plain. Read a moment after the
-  // click so the page has reacted (a quoter option selected, an FAQ opened). Clicks on plain content get a
-  // fact about the section, but not on every click.
+  // --- Clicks anywhere on the page, buttons or not: he explains what you clicked, short and plain. Read a
+  // moment after the click so the page has reacted (a quoter option selected, an FAQ opened). Plain text and
+  // cards get a line too, just not several in a row.
   let lastSaid = ''
   let lastAt = 0
   let lastPlainAt = 0
@@ -234,7 +234,7 @@ function boot() {
       const now = performance.now()
       if (!r || !handle) return
       if (r.line.text === lastSaid && now - lastAt < 4000) return
-      if (!r.interactive && now - lastPlainAt < 8000) return
+      if (!r.interactive && now - lastPlainAt < 2500) return
       if (!r.interactive) lastPlainAt = now
       lastSaid = r.line.text
       lastAt = now

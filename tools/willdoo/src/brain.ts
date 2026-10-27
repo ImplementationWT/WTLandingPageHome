@@ -765,8 +765,8 @@ const INTENTS: Intent[] = [
   {
     keys: ['quien fundo', 'fundador', 'fundadores', 'founder', 'founders', 'equipo', 'team', 'quienes son', 'who are you', 'alejandro', 'rodrigo', 'christopher', 'orlando', 'donde estan', 'where are you'],
     answer: {
-      en: 'Whatever Tech was founded by Alejandro Panizo Ayza (Founder & Managing Director), an Official monday.com Partner. The co-founders are Rodrigo Espinosa Torres (Commercial Director), Christopher Cohen Grozo and Orlando Espinosa Chiroque (Board Directors). We are Whatever Tech LLC, registered in Florida, working remotely across 5 continents.',
-      es: 'Whatever Tech la fundó Alejandro Panizo Ayza (Fundador y Managing Director), Partner Oficial de monday.com. Los co-fundadores son Rodrigo Espinosa Torres (Director Comercial), Christopher Cohen Grozo y Orlando Espinosa Chiroque (Miembros del Directorio). Somos Whatever Tech LLC, registrada en Florida, y trabajamos remoto en 5 continentes.',
+      en: 'Whatever Tech was founded by Alejandro Panizo Ayza (Founder & Managing Director), an Official monday.com Partner. The co-founders are Rodrigo Espinosa Torres (Commercial Director), Christopher Cohen Grozo and Orlando Espinosa Chiroque (Board Directors). The team behind them: architects, developers, automation engineers and industrial engineers. We are Whatever Tech LLC, registered in Florida, working remotely across 5 continents.',
+      es: 'Whatever Tech la fundó Alejandro Panizo Ayza (Fundador y Managing Director), Partner Oficial de monday.com. Los co-fundadores son Rodrigo Espinosa Torres (Director Comercial), Christopher Cohen Grozo y Orlando Espinosa Chiroque (Miembros del Directorio). Detrás hay un equipo de arquitectos, desarrolladores, ingenieros de automatización e ingenieros industriales. Somos Whatever Tech LLC, registrada en Florida, y trabajamos remoto en 5 continentes.',
     },
     section: 'who-we-are',
   },

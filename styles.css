@@ -2384,6 +2384,14 @@ button.qt-app:focus-visible { outline: 2px solid var(--red); outline-offset: 2px
 /* ─── V2.6 · WILL DOO + NEBULA (ported from WTProposalPlatform; script: assets/willdoo, source: tools/willdoo) ─── */
 /* Will Doo, his bubble and chat sit on the top layer, over the nav and popups; only the custom cursor (9997+) is above. */
 .wd-nebula { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+/* Hero apps: no cursor brackets inside them (.cur-noframe/.cur-noscan on .happ-win); hovering looks like each
+   app's own selection instead: the side menu item of Sales and Admin with its color bar, the Logistics card with
+   its yellow edge. The cursor dot still takes the app's color (--ac). */
+.happ-slot > .wv { --ac: var(--acc); }
+.wv .wnav button:hover { background: var(--card); color: var(--tx); box-shadow: inset 3px 0 0 var(--acc); }
+.wv .tb button:hover { color: var(--acc); }
+.wv.log .cd { cursor: pointer; }
+.wv.log .cd:not(.f):hover { border-left: 4px solid var(--acc); padding-left: 15px; }
 /* Full-width strips outside .container: lift them above the nebula like the rest of the content. */
 .trust-reviews, .flag-band { position: relative; z-index: 1; }
 .wd-robot { position: fixed; top: 0; left: 0; width: 150px; height: 180px; z-index: 9100; pointer-events: none; opacity: 1; transition: opacity .7s; will-change: transform; }
